@@ -1,28 +1,20 @@
 import requests
 import os
-from dotenv import load_dotenv
-
-# Load API key from .env file
-load_dotenv()
+import streamlit as st
 
 class NemotronClient:
     def __init__(self):
-        self.api_key = os.getenv("NVIDIA_API_KEY")
+        # Try to get API key from Streamlit secrets first, then from environment
+        try:
+            self.api_key = st.secrets["NVIDIA_API_KEY"]
+        except:
+            self.api_key = os.getenv("NVIDIA_API_KEY")
+        
         self.api_url = "https://integrate.api.nvidia.com/v1/chat/completions"
-        self.model = "nvidia/nemotron-4-340b-instruct"
+        # Use the free model (262k context)
+        self.model = "nvidia/nemotron-3-super-120b-a12b-free"
     
     def chat(self, messages):
-        """
-        Send messages to NVIDIA Nemotron API and get response
-        
-        Args:
-            messages: List of message dictionaries
-                     [{"role": "user", "content": "hello"}, ...]
-        
-        Returns:
-            str: AI response
-        """
-        
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Accept": "application/json",
@@ -43,12 +35,10 @@ class NemotronClient:
                 timeout=30
             )
             
-            # Check if successful
             if response.status_code == 200:
                 answer = response.json()["choices"][0]["message"]["content"]
                 return answer
             else:
-                return f"Error: {response.status_code}"
-        
+                return f"Error: {response.status_code} - {response.text}"
         except Exception as e:
             return f"Error: {str(e)}"
